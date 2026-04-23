@@ -1,32 +1,647 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>FPL Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --green: #00FF87;
+    --green-dim: #00c968;
+    --dark: #0a0f0d;
+    --dark2: #111a14;
+    --dark3: #1a2620;
+    --card: #162019;
+    --border: #243328;
+    --text: #e8f0ea;
+    --muted: #6b8a72;
+    --red: #ff4d6d;
+    --amber: #ffd60a;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--dark);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-<script src="https://cdn.tailwindcss.com"></script>
+  /* ── BG TEXTURE ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,255,135,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 90% 80%, rgba(0,255,135,0.04) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
 
+  /* ── HEADER ── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,15,13,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 60px;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px; letter-spacing: 3px;
+    color: var(--green);
+  }
+  .logo span { color: var(--text); }
+
+  /* ── NAV ── */
+  nav {
+    display: flex; gap: 2px;
+  }
+  nav button {
+    background: none; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+    color: var(--muted); padding: 6px 14px; border-radius: 20px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  nav button:hover { color: var(--text); background: var(--dark3); }
+  nav button.active { color: var(--dark); background: var(--green); font-weight: 600; }
+
+  /* ── MAIN ── */
+  main {
+    position: relative; z-index: 1;
+    max-width: 960px; margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  /* ── VIEW ── */
+  .view { display: none; animation: fadeIn 0.3s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px; letter-spacing: 2px;
+    color: var(--text); margin-bottom: 4px;
+  }
+  .section-sub {
+    font-size: 13px; color: var(--muted); margin-bottom: 28px;
+  }
+
+  /* ── LOADING / ERROR ── */
+  .loader {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--muted); padding: 40px 0;
+  }
+  .spinner {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--green);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-msg {
+    background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.3);
+    border-radius: var(--radius); padding: 16px 20px;
+    font-size: 14px; color: var(--red);
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover { border-color: rgba(0,255,135,0.3); transform: translateY(-1px); }
+
+  /* ── PLAYER TABLE ── */
+  .player-list { display: flex; flex-direction: column; gap: 8px; }
+  .player-row {
+    display: grid; align-items: center;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
+    transition: border-color 0.2s;
+    cursor: default;
+  }
+  .player-row:hover { border-color: rgba(0,255,135,0.25); }
+  .player-row.top-row { grid-template-columns: 32px 1fr 140px 80px; gap: 12px; }
+  .rank-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--muted); text-align: center;
+  }
+  .rank-num.gold { color: var(--amber); font-weight: 600; }
+  .player-name { font-weight: 600; font-size: 14px; }
+  .player-team { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .badge {
+    font-size: 11px; font-weight: 500;
+    padding: 2px 8px; border-radius: 20px;
+    background: var(--dark3); color: var(--muted);
+    justify-self: start;
+  }
+  .pts-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px; font-weight: 600;
+    color: var(--green); text-align: right;
+  }
+
+  /* ── SEARCH ── */
+  .search-wrap {
+    position: relative; margin-bottom: 20px;
+  }
+  .search-wrap input {
+    width: 100%; background: var(--card); border: 1px solid var(--border);
+    border-radius: 30px; padding: 12px 20px 12px 46px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    color: var(--text); outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-wrap input:focus { border-color: var(--green); }
+  .search-wrap input::placeholder { color: var(--muted); }
+  .search-icon {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: 16px; pointer-events: none;
+  }
+  .search-count {
+    font-size: 12px; color: var(--muted); margin-bottom: 14px;
+  }
+
+  /* ── FIXTURES ── */
+  .fixture-grid { display: flex; flex-direction: column; gap: 8px; }
+  .fixture-row {
+    display: grid; grid-template-columns: 1fr auto 1fr auto;
+    align-items: center; gap: 12px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
+  }
+  .team-name { font-size: 13px; font-weight: 500; }
+  .team-name.away { text-align: right; }
+  .vs-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px; color: var(--muted);
+    background: var(--dark3); padding: 3px 7px; border-radius: 4px;
+  }
+  .diff-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .diff-1, .diff-2 { background: #00c96870; border: 1.5px solid var(--green-dim); }
+  .diff-3 { background: rgba(255,214,10,0.3); border: 1.5px solid var(--amber); }
+  .diff-4, .diff-5 { background: rgba(255,77,109,0.3); border: 1.5px solid var(--red); }
+  .diff-wrap { display: flex; gap: 4px; align-items: center; }
+  .diff-label { font-size: 11px; color: var(--muted); }
+
+  /* ── BEST VALUE ── */
+  .value-row { grid-template-columns: 32px 1fr 90px 80px 80px; gap: 12px; }
+  .value-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--amber);
+  }
+  .price-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px; color: var(--muted);
+  }
+
+  /* ── DREAM XI ── */
+  .pitch {
+    background: linear-gradient(180deg, #0d2a18 0%, #0a1f12 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 20px;
+    position: relative; overflow: hidden;
+  }
+  .pitch::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 60px,
+        rgba(255,255,255,0.02) 60px,
+        rgba(255,255,255,0.02) 61px
+      );
+    pointer-events: none;
+  }
+  .pitch-row {
+    display: flex; justify-content: center; gap: 12px;
+    margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .pitch-row:last-child { margin-bottom: 0; }
+  .player-card-pitch {
+    background: rgba(0,255,135,0.08);
+    border: 1px solid rgba(0,255,135,0.25);
+    border-radius: 10px; padding: 10px 14px;
+    text-align: center; min-width: 90px;
+    transition: transform 0.2s;
+  }
+  .player-card-pitch:hover { transform: translateY(-3px); }
+  .pitch-pos {
+    font-size: 9px; font-weight: 600; letter-spacing: 1px;
+    color: var(--green); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .pitch-name { font-size: 11px; font-weight: 600; line-height: 1.3; }
+  .pitch-team { font-size: 10px; color: var(--muted); }
+  .pitch-pts { font-size: 10px; color: var(--green); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .gen-btn {
+    margin-top: 20px; display: block; width: 100%;
+    background: var(--green); color: var(--dark);
+    border: none; border-radius: 30px; padding: 13px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.5px;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .gen-btn:hover { background: var(--green-dim); transform: scale(0.99); }
+  .gen-btn:active { transform: scale(0.97); }
+
+  /* ── MANAGER LOOKUP ── */
+  .manager-form {
+    display: flex; gap: 10px; margin-bottom: 24px;
+  }
+  .manager-form input {
+    flex: 1; background: var(--card); border: 1px solid var(--border);
+    border-radius: 30px; padding: 12px 20px;
+    font-family: 'DM Mono', monospace; font-size: 14px;
+    color: var(--text); outline: none; transition: border-color 0.2s;
+  }
+  .manager-form input:focus { border-color: var(--green); }
+  .manager-form input::placeholder { color: var(--muted); font-family: 'DM Sans', sans-serif; }
+  .btn-green {
+    background: var(--green); color: var(--dark);
+    border: none; border-radius: 30px; padding: 12px 24px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .btn-green:hover { background: var(--green-dim); }
+  .manager-card {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .stat-tile {
+    background: var(--dark3); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    text-align: center;
+  }
+  .stat-tile .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-tile .value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--green); letter-spacing: 1px; }
+  .stat-tile .value.small { font-size: 18px; color: var(--text); }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--muted);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .logo { font-size: 20px; }
+    nav button { font-size: 10px; padding: 5px 9px; }
+    .section-title { font-size: 30px; }
+    .player-row.top-row { grid-template-columns: 28px 1fr 90px 60px; }
+    .value-row { grid-template-columns: 28px 1fr 70px 60px 60px; }
+    .manager-card { grid-template-columns: 1fr; }
+    .fixture-row { grid-template-columns: 1fr auto 1fr; }
+    .fixture-row .diff-wrap { display: none; }
+  }
+</style>
 </head>
+<body>
 
-<body class="bg-gray-900 text-white">
-
-<header class="p-4 bg-black flex justify-between">
-<h1 class="text-xl font-bold">FPL Analytics</h1>
-
-<nav class="space-x-4">
-<button onclick="navigate('top')">Top Players</button>
-<button onclick="navigate('search')">Search</button>
-<button onclick="navigate('fixtures')">Fixtures</button>
-<button onclick="navigate('value')">Best Value</button>
-<button onclick="navigate('dream')">Dream XI</button>
-<button onclick="navigate('manager')">Manager</button>
-</nav>
-
+<header>
+  <div class="logo">FPL<span>Analytics</span></div>
+  <nav id="nav">
+    <button class="active" data-view="top">Top</button>
+    <button data-view="search">Search</button>
+    <button data-view="fixtures">Fixtures</button>
+    <button data-view="value">Value</button>
+    <button data-view="dream">Dream XI</button>
+    <button data-view="manager">Manager</button>
+  </nav>
 </header>
 
-<main id="app" class="p-6"></main>
+<main>
 
-<script src="app.js"></script>
+  <!-- TOP PLAYERS -->
+  <div id="view-top" class="view active">
+    <div class="section-title">Top Players</div>
+    <div class="section-sub">Highest scoring players this season</div>
+    <div id="top-content"><div class="loader"><div class="spinner"></div> Fetching player data…</div></div>
+  </div>
 
+  <!-- SEARCH -->
+  <div id="view-search" class="view">
+    <div class="section-title">Player Search</div>
+    <div class="section-sub">Find any player in the league</div>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="search-input" placeholder="Type a player name…" autocomplete="off" />
+    </div>
+    <div id="search-count" class="search-count"></div>
+    <div id="search-results" class="player-list"></div>
+  </div>
+
+  <!-- FIXTURES -->
+  <div id="view-fixtures" class="view">
+    <div class="section-title">Fixtures</div>
+    <div class="section-sub">Upcoming matches with difficulty ratings</div>
+    <div class="legend">
+      <div class="legend-item"><div class="diff-dot diff-1"></div> Easy (1–2)</div>
+      <div class="legend-item"><div class="diff-dot diff-3"></div> Medium (3)</div>
+      <div class="legend-item"><div class="diff-dot diff-5"></div> Hard (4–5)</div>
+    </div>
+    <div id="fixtures-content"><div class="loader"><div class="spinner"></div> Loading fixtures…</div></div>
+  </div>
+
+  <!-- BEST VALUE -->
+  <div id="view-value" class="view">
+    <div class="section-title">Best Value</div>
+    <div class="section-sub">Points per £1m — the smarter metric</div>
+    <div id="value-content"><div class="loader"><div class="spinner"></div> Calculating value…</div></div>
+  </div>
+
+  <!-- DREAM XI -->
+  <div id="view-dream" class="view">
+    <div class="section-title">Dream XI</div>
+    <div class="section-sub">A random all-star lineup from the current player pool</div>
+    <div id="dream-content"><div class="loader"><div class="spinner"></div> Assembling squad…</div></div>
+  </div>
+
+  <!-- MANAGER -->
+  <div id="view-manager" class="view">
+    <div class="section-title">Manager Lookup</div>
+    <div class="section-sub">Enter your FPL Manager ID to see your stats</div>
+    <div class="manager-form">
+      <input type="number" id="manager-id" placeholder="e.g. 123456" />
+      <button class="btn-green" id="manager-btn">Check</button>
+    </div>
+    <div id="manager-content"></div>
+  </div>
+
+</main>
+
+<script>
+// ── GLOBAL STATE ──
+const state = { players: [], teams: [], fixtures: [], loaded: false };
+
+// ── PROXY to bypass CORS ──
+const PROXY = 'https://corsproxy.io/?';
+const FPL_BASE = 'https://fantasy.premierleague.com/api';
+
+async function fetchFPL(path) {
+  const url = PROXY + encodeURIComponent(FPL_BASE + path);
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+// ── INIT ──
+async function init() {
+  try {
+    const data = await fetchFPL('/bootstrap-static/');
+    state.players = data.elements;
+    state.teams = data.teams;
+    state.loaded = true;
+    renderTop();
+    initSearch();
+  } catch (e) {
+    document.getElementById('top-content').innerHTML =
+      `<div class="error-msg">⚠ Could not load FPL data. The API may be rate-limited or unavailable. Try again later.<br><small style="opacity:.6">${e.message}</small></div>`;
+  }
+}
+
+async function initFixtures() {
+  const el = document.getElementById('fixtures-content');
+  try {
+    const data = await fetchFPL('/fixtures/?future=1');
+    state.fixtures = data.slice(0, 40);
+    renderFixtures();
+  } catch (e) {
+    el.innerHTML = `<div class="error-msg">⚠ Could not load fixtures. ${e.message}</div>`;
+  }
+}
+
+// ── TEAM NAME ──
+function teamName(id) {
+  const t = state.teams.find(t => t.id === id);
+  return t ? t.short_name : '?';
+}
+
+// ── TOP PLAYERS ──
+function renderTop() {
+  const top = [...state.players].sort((a,b) => b.total_points - a.total_points).slice(0,15);
+  document.getElementById('top-content').innerHTML = `
+    <div class="player-list">
+      ${top.map((p,i) => `
+        <div class="player-row top-row">
+          <div class="rank-num ${i<3?'gold':''}">${i+1}</div>
+          <div>
+            <div class="player-name">${p.first_name} ${p.second_name}</div>
+            <div class="player-team">${teamName(p.team)} · ${posLabel(p.element_type)}</div>
+          </div>
+          <div class="badge">${posLabel(p.element_type)}</div>
+          <div class="pts-chip">${p.total_points} pts</div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function posLabel(type) {
+  return {1:'GKP',2:'DEF',3:'MID',4:'FWD'}[type] || '?';
+}
+
+// ── SEARCH ──
+function initSearch() {
+  const input = document.getElementById('search-input');
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    const count = document.getElementById('search-count');
+    const results = document.getElementById('search-results');
+    if (!q) { count.textContent = ''; results.innerHTML = ''; return; }
+    const matches = state.players.filter(p =>
+      `${p.first_name} ${p.second_name}`.toLowerCase().includes(q)
+    ).slice(0, 20);
+    count.textContent = `${matches.length} player${matches.length!==1?'s':''} found`;
+    results.innerHTML = matches.map(p => `
+      <div class="player-row top-row">
+        <div class="rank-num">—</div>
+        <div>
+          <div class="player-name">${p.first_name} ${p.second_name}</div>
+          <div class="player-team">${teamName(p.team)}</div>
+        </div>
+        <div class="badge">${posLabel(p.element_type)}</div>
+        <div class="pts-chip">${p.total_points} pts</div>
+      </div>
+    `).join('');
+  });
+}
+
+// ── FIXTURES ──
+function renderFixtures() {
+  const el = document.getElementById('fixtures-content');
+  if (!state.fixtures.length) { el.innerHTML = '<div class="error-msg">No upcoming fixtures found.</div>'; return; }
+  el.innerHTML = `<div class="fixture-grid">
+    ${state.fixtures.map(f => {
+      const home = teamName(f.team_h);
+      const away = teamName(f.team_a);
+      const hd = f.team_h_difficulty || 3;
+      const ad = f.team_a_difficulty || 3;
+      const date = f.kickoff_time ? new Date(f.kickoff_time).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : 'TBC';
+      return `
+        <div class="fixture-row">
+          <div class="team-name">${home}</div>
+          <div class="vs-badge">VS</div>
+          <div class="team-name away">${away}</div>
+          <div class="diff-wrap">
+            <div class="diff-dot diff-${hd}"></div>
+            <span class="diff-label">${date}</span>
+            <div class="diff-dot diff-${ad}"></div>
+          </div>
+        </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ── BEST VALUE ──
+function renderValue() {
+  const el = document.getElementById('value-content');
+  if (!state.loaded) { el.innerHTML = '<div class="loader"><div class="spinner"></div> Loading…</div>'; return; }
+  const valued = state.players
+    .filter(p => p.now_cost > 0 && p.total_points > 0)
+    .map(p => ({...p, value: (p.total_points / (p.now_cost/10)).toFixed(2)}))
+    .sort((a,b) => b.value - a.value)
+    .slice(0,15);
+  el.innerHTML = `<div class="player-list">
+    ${valued.map((p,i) => `
+      <div class="player-row value-row">
+        <div class="rank-num ${i<3?'gold':''}">${i+1}</div>
+        <div>
+          <div class="player-name">${p.first_name} ${p.second_name}</div>
+          <div class="player-team">${teamName(p.team)}</div>
+        </div>
+        <div class="value-chip">${p.value} val</div>
+        <div class="price-chip">£${(p.now_cost/10).toFixed(1)}m</div>
+        <div class="pts-chip">${p.total_points} pts</div>
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+// ── DREAM XI ──
+function generateDream() {
+  const el = document.getElementById('dream-content');
+  if (!state.loaded) { el.innerHTML = '<div class="loader"><div class="spinner"></div> Loading…</div>'; return; }
+
+  const byPos = (type, n) => {
+    const pool = state.players.filter(p => p.element_type === type && p.total_points > 10);
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, n);
+  };
+
+  const gk  = byPos(1,1);
+  const def = byPos(2,4);
+  const mid = byPos(3,4);
+  const fwd = byPos(4,2);
+
+  const card = (p, pos) => `
+    <div class="player-card-pitch">
+      <div class="pitch-pos">${pos}</div>
+      <div class="pitch-name">${p.second_name}</div>
+      <div class="pitch-team">${teamName(p.team)}</div>
+      <div class="pitch-pts">${p.total_points}pts</div>
+    </div>`;
+
+  el.innerHTML = `
+    <div class="pitch">
+      <div class="pitch-row">${gk.map(p=>card(p,'GKP')).join('')}</div>
+      <div class="pitch-row">${def.map(p=>card(p,'DEF')).join('')}</div>
+      <div class="pitch-row">${mid.map(p=>card(p,'MID')).join('')}</div>
+      <div class="pitch-row">${fwd.map(p=>card(p,'FWD')).join('')}</div>
+    </div>
+    <button class="gen-btn" onclick="generateDream()">⟳ Generate New Team</button>`;
+}
+
+// ── MANAGER ──
+document.getElementById('manager-btn').addEventListener('click', async () => {
+  const id = document.getElementById('manager-id').value.trim();
+  const el = document.getElementById('manager-content');
+  if (!id) { el.innerHTML = '<div class="error-msg">Please enter a Manager ID.</div>'; return; }
+  el.innerHTML = '<div class="loader"><div class="spinner"></div> Looking up manager…</div>';
+  try {
+    const url = PROXY + encodeURIComponent(`${FPL_BASE}/entry/${id}/`);
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Manager not found (HTTP ${r.status})`);
+    const d = await r.json();
+    el.innerHTML = `
+      <div class="card" style="margin-bottom:16px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Manager</div>
+        <div style="font-size:20px;font-weight:600">${d.player_first_name} ${d.player_last_name}</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px">${d.name}</div>
+      </div>
+      <div class="manager-card">
+        <div class="stat-tile">
+          <div class="label">Total Points</div>
+          <div class="value">${d.summary_overall_points}</div>
+        </div>
+        <div class="stat-tile">
+          <div class="label">Overall Rank</div>
+          <div class="value">${(d.summary_overall_rank||0).toLocaleString()}</div>
+        </div>
+        <div class="stat-tile">
+          <div class="label">GW Points</div>
+          <div class="value">${d.summary_event_points}</div>
+        </div>
+        <div class="stat-tile">
+          <div class="label">GW Rank</div>
+          <div class="value">${(d.summary_event_rank||0).toLocaleString()}</div>
+        </div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="error-msg">⚠ ${e.message}</div>`;
+  }
+});
+
+document.getElementById('manager-id').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('manager-btn').click();
+});
+
+// ── NAVIGATION ──
+const views = ['top','search','fixtures','value','dream','manager'];
+let fixturesLoaded = false;
+
+document.getElementById('nav').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-view]');
+  if (!btn) return;
+  const v = btn.dataset.view;
+
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  views.forEach(id => {
+    const el = document.getElementById(`view-${id}`);
+    el.classList.toggle('active', id === v);
+  });
+
+  if (v === 'fixtures' && !fixturesLoaded) { fixturesLoaded = true; initFixtures(); }
+  if (v === 'value' && state.loaded) renderValue();
+  if (v === 'dream' && state.loaded) generateDream();
+  if (v === 'dream' && !state.loaded) {
+    document.getElementById('dream-content').innerHTML = '<div class="error-msg">Player data not loaded yet.</div>';
+  }
+});
+
+// ── BOOT ──
+init();
+</script>
 </body>
 </html>
