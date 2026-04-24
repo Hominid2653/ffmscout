@@ -5,8 +5,16 @@
 // ── CONFIG ───────────────────────────────────
 const PROXY    = 'https://corsproxy.io/?';
 const FPL_BASE = 'https://fantasy.premierleague.com/api';
-// Proxied to avoid CORS — corsproxy.io forwards all headers including anthropic-version
-const ANTHROPIC_API = () => PROXY + encodeURIComponent('https://api.anthropic.com/v1/messages');
+// Gemini 2.0 Flash — free tier, 1500 req/day, no credit card needed
+// Key from: https://aistudio.google.com/app/apikey
+// Gemini API doesn't require a CORS proxy — it supports browser requests natively
+const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_API   = () =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${getApiKey()}`;
+
+function getApiKey() {
+  return localStorage.getItem('fpl_gemini_key') ?? '';
+}
 
 const SHIRT_URL = (code, isGK = false) =>
   `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${code}${isGK ? '_1' : ''}-66.png`;
@@ -64,7 +72,8 @@ async function init() {
     state.loaded  = true;
     renderTop();
     initSearch();
-    initAI();
+    initApiKey();
+  initAI();
   } catch (e) {
     document.getElementById('top-content').innerHTML =
       errorHTML(`Could not load FPL data — API may be unavailable. ${e.message}`);
@@ -302,6 +311,41 @@ ${fixtures}
 `.trim();
 }
 
+function initApiKey() {
+  const input   = document.getElementById('api-key-input');
+  const saveBtn = document.getElementById('api-key-save');
+  const status  = document.getElementById('api-key-status');
+
+  // Load saved key on start
+  const saved = getApiKey();
+  if (saved) {
+    input.value = saved;
+    status.textContent = '✓ Key saved';
+    status.className = 'mt-1.5 text-xs text-fpl-green font-medium';
+  }
+
+  saveBtn.addEventListener('click', () => {
+    const key = input.value.trim();
+    if (!key) {
+      status.textContent = 'Enter a key first.';
+      status.className = 'mt-1.5 text-xs text-red-500';
+      return;
+    }
+    // Gemini keys are typically 39 chars starting with "AIza"
+    if (!key.startsWith('AIza')) {
+      status.textContent = 'Key should start with AIza…';
+      status.className = 'mt-1.5 text-xs text-amber-500';
+      // still save — user might have a different format
+    }
+    localStorage.setItem('fpl_gemini_key', key);
+    status.textContent = '✓ Key saved';
+    status.className = 'mt-1.5 text-xs text-fpl-green font-medium';
+    input.type = 'password';
+  });
+
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') saveBtn.click(); });
+}
+
 function initAI() {
   // topic buttons
   document.getElementById('ai-topics').addEventListener('click', e => {
@@ -395,6 +439,15 @@ async function sendAIMessage(text) {
   inputEl.style.height = 'auto';
   sendBtn.disabled = true;
 
+  // Guard: require API key
+  if (!getApiKey()) {
+    sendBtn.disabled = false;
+    const aiBubble2 = appendMessage('assistant', '', false);
+    const el2 = document.querySelector(`#${aiBubble2} .prose-bubble`);
+    if (el2) el2.innerHTML = `<span class="text-amber-600">⚠ Please enter your <strong>Google Gemini API key</strong> in the sidebar first, then click <strong>Save</strong>. Get one free at <a href='https://aistudio.google.com/app/apikey' target='_blank' class='underline'>aistudio.google.com</a>.</span>`;
+    return;
+  }
+
   // user bubble
   appendMessage('user', text);
   state.aiHistory.push({ role: 'user', content: text });
@@ -416,28 +469,35 @@ Keep responses focused and actionable.
 
 ${buildFPLContext()}`;
 
-    const response = await fetch(ANTHROPIC_API(), {
+    // Build Gemini request — system prompt goes as a "system" role turn
+    // History is mapped: user→user, assistant→model
+    const geminiContents = [
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      { role: 'model', parts: [{ text: 'Understood. I have the FPL data and am ready to give expert analysis.' }] },
+      ...state.aiHistory.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      })),
+    ];
+
+    const response = await fetch(GEMINI_API(), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: state.aiHistory,
+        contents: geminiContents,
+        generationConfig: { maxOutputTokens: 1000, temperature: 0.7 },
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data?.error?.message ?? `API error ${response.status}`);
+      const msg = data?.error?.message ?? `API error ${response.status}`;
+      throw new Error(msg);
     }
 
-    const reply = data.content?.find(b => b.type === 'text')?.text ?? '';
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    if (!reply) throw new Error('Empty response from Gemini.');
     state.aiHistory.push({ role: 'assistant', content: reply });
 
     // typewriter render
