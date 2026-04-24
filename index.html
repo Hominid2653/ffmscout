@@ -10,134 +10,140 @@
       theme: {
         extend: {
           colors: {
-            fpl: {
-              green:  '#00c48c',
-              greend: '#00a876',
-              purple: '#37003c',
-              light:  '#f4f4f4',
-            }
+            fpl: { green:'#00c48c', greend:'#00a876', purple:'#37003c' }
           },
           fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
+            sans: ['Inter','system-ui','sans-serif'],
+            mono: ['JetBrains Mono','monospace'],
           }
         }
       }
     }
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
-    [x-cloak] { display: none; }
-    .view { display: none; }
-    .view.active { display: block; }
-    .ai-view.active { display: flex; }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .view.active { animation: fadeUp 0.2s ease; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner { animation: spin 0.75s linear infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-    .cursor { animation: blink 0.9s step-end infinite; }
-    @keyframes dot-pulse {
-      0%,100% { transform: scale(0.7); opacity: 0.4; }
-      50%      { transform: scale(1);   opacity: 1; }
-    }
-    .dot-1 { animation: dot-pulse 1.2s ease-in-out infinite; }
-    .dot-2 { animation: dot-pulse 1.2s ease-in-out 0.2s infinite; }
-    .dot-3 { animation: dot-pulse 1.2s ease-in-out 0.4s infinite; }
-    /* pitch stripe background */
+    .view        { display:none }
+    .view.active { display:block; animation:fadeUp 0.2s ease }
+    .ai-view.active  { display:flex }
+    .fdr-view.active { display:block }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin   { to{transform:rotate(360deg)} }
+    @keyframes blink  { 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes dot-pulse { 0%,100%{transform:scale(.7);opacity:.4} 50%{transform:scale(1);opacity:1} }
+    .spinner { animation:spin .75s linear infinite }
+    .cursor  { animation:blink .9s step-end infinite }
+    .dot-1   { animation:dot-pulse 1.2s ease-in-out infinite }
+    .dot-2   { animation:dot-pulse 1.2s ease-in-out .2s infinite }
+    .dot-3   { animation:dot-pulse 1.2s ease-in-out .4s infinite }
     .pitch-bg {
-      background-color: #2d7a4f;
-      background-image: repeating-linear-gradient(
-        0deg, transparent, transparent 68px,
-        rgba(0,0,0,0.06) 68px, rgba(0,0,0,0.06) 69px
-      );
+      background-color:#2d7a4f;
+      background-image:repeating-linear-gradient(0deg,transparent,transparent 68px,rgba(0,0,0,.06) 68px,rgba(0,0,0,.06) 69px);
     }
-    /* markdown in AI bubbles */
-    .prose-bubble p { margin: 0 0 0.5rem; }
-    .prose-bubble p:last-child { margin: 0; }
-    .prose-bubble ul { list-style: disc; padding-left: 1.2rem; margin: 0.4rem 0; }
-    .prose-bubble ol { list-style: decimal; padding-left: 1.2rem; margin: 0.4rem 0; }
-    .prose-bubble li { margin: 0.2rem 0; }
-    .prose-bubble strong { font-weight: 600; color: #00a876; }
-    .prose-bubble h3 { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #37003c; margin: 0.75rem 0 0.3rem; }
-    .prose-bubble code { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background: #f0f0f0; padding: 1px 4px; border-radius: 3px; }
+    /* AI markdown */
+    .prose-bubble p       { margin:0 0 .5rem }
+    .prose-bubble p:last-child { margin:0 }
+    .prose-bubble ul      { list-style:disc; padding-left:1.2rem; margin:.4rem 0 }
+    .prose-bubble ol      { list-style:decimal; padding-left:1.2rem; margin:.4rem 0 }
+    .prose-bubble li      { margin:.2rem 0 }
+    .prose-bubble strong  { font-weight:600; color:#00a876 }
+    .prose-bubble h3      { font-weight:700; font-size:.85rem; text-transform:uppercase; letter-spacing:.05em; color:#37003c; margin:.75rem 0 .3rem }
+    .prose-bubble code    { font-family:'JetBrains Mono',monospace; font-size:.75rem; background:#f0f0f0; padding:1px 4px; border-radius:3px }
+    /* FDR table */
+    .fdr-table      { border-collapse:separate; border-spacing:0; width:100%; font-size:.75rem }
+    .fdr-table th   { position:sticky; top:0; background:white; z-index:10; padding:.5rem .4rem; text-align:center; font-weight:600; color:#6b7280; border-bottom:2px solid #e5e7eb; white-space:nowrap }
+    .fdr-table th.team-col { text-align:left; padding-left:.75rem; min-width:110px }
+    .fdr-table td   { padding:.35rem .4rem; text-align:center; border-bottom:1px solid #f3f4f6 }
+    .fdr-table td.team-cell { text-align:left; padding-left:.75rem; font-weight:600; color:#111827; white-space:nowrap }
+    .fdr-table tr:last-child td { border-bottom:none }
+    .fdr-cell { display:inline-flex; align-items:center; justify-content:center; width:2.6rem; height:1.7rem; border-radius:.375rem; font-weight:600; font-size:.7rem; white-space:nowrap }
+    .fdr-1,.fdr-2 { background:#bbf7d0; color:#14532d }
+    .fdr-3        { background:#fef08a; color:#713f12 }
+    .fdr-4        { background:#fed7aa; color:#7c2d12 }
+    .fdr-5        { background:#fecaca; color:#7f1d1d }
+    .fdr-blank    { background:#f3f4f6; color:#d1d5db }
+    /* nav */
+    .nav-btn { white-space:nowrap; font-size:.75rem; font-weight:500; padding:.35rem .75rem; border-radius:9999px; border:none; background:none; color:#6b7280; cursor:pointer; transition:all .15s }
+    .nav-btn:hover  { background:#f3f4f6; color:#111827 }
+    .nav-btn.active { background:#37003c; color:white }
+    .nav-btn.ai-tab { color:#00a876; border:1px solid rgba(0,196,140,.25) }
+    .nav-btn.ai-tab:hover  { background:rgba(0,196,140,.08) }
+    .nav-btn.ai-tab.active { background:#00c48c; color:white; border-color:transparent }
+    /* player cards */
+    .player-card { display:grid; align-items:center; gap:.6rem; background:white; border:1px solid #f0f0f0; border-radius:.875rem; padding:.65rem 1rem; transition:box-shadow .15s,border-color .15s }
+    .player-card:hover { border-color:rgba(0,196,140,.25); box-shadow:0 2px 8px rgba(0,196,140,.08) }
+    .player-card.top-layout   { grid-template-columns:2rem 2.5rem 1fr auto auto }
+    .player-card.value-layout { grid-template-columns:2rem 2.5rem 1fr auto auto auto }
+    .rank       { font-size:.7rem; font-family:'JetBrains Mono',monospace; color:#9ca3af; text-align:center }
+    .rank.gold  { color:#d97706; font-weight:600 }
+    .player-name-el { font-size:.875rem; font-weight:600; color:#111827 }
+    .player-meta    { font-size:.7rem; color:#9ca3af; margin-top:1px }
+    .pos-badge  { font-size:.65rem; font-weight:600; padding:2px 7px; border-radius:9999px; white-space:nowrap }
+    .pos-badge.GKP { background:#fef9c3; color:#a16207 }
+    .pos-badge.DEF { background:#dcfce7; color:#15803d }
+    .pos-badge.MID { background:#dbeafe; color:#1d4ed8 }
+    .pos-badge.FWD { background:#fee2e2; color:#dc2626 }
+    .pts       { font-size:.8rem; font-weight:700; color:#00a876; font-family:'JetBrains Mono',monospace; white-space:nowrap }
+    .val-score { font-size:.7rem; font-weight:600; color:#d97706; font-family:'JetBrains Mono',monospace }
+    .price     { font-size:.7rem; color:#9ca3af; font-family:'JetBrains Mono',monospace }
+    .diff-pip  { display:inline-block; width:8px; height:8px; border-radius:9999px; vertical-align:middle }
+    .diff-1,.diff-2 { background:#34d399 }
+    .diff-3         { background:#fbbf24 }
+    .diff-4,.diff-5 { background:#f87171 }
+    /* pitch */
+    .pitch-card { display:flex; flex-direction:column; align-items:center; background:rgba(255,255,255,.15); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.25); border-radius:.75rem; padding:.65rem .75rem .5rem; min-width:78px; max-width:88px; text-align:center; transition:transform .15s }
+    .pitch-card:hover { transform:translateY(-3px) }
+    /* AI sidebar topics */
+    .ai-topic { text-align:left; font-size:.75rem; color:#6b7280; padding:.45rem .6rem; border-radius:.5rem; border:none; background:none; cursor:pointer; transition:all .15s; width:100% }
+    .ai-topic:hover  { background:#f3f4f6; color:#111827 }
+    .ai-topic.active { background:rgba(0,196,140,.1); color:#00a876; font-weight:500 }
+    .ai-suggestion { font-size:.75rem; color:#374151; border:1px solid #e5e7eb; background:white; padding:.4rem .9rem; border-radius:9999px; cursor:pointer; transition:all .15s }
+    .ai-suggestion:hover { border-color:#00c48c; color:#00a876 }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans min-h-screen">
 
-<!-- ── HEADER ── -->
+<!-- HEADER -->
 <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-  <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-
-    <!-- Logo -->
+  <div class="max-w-6xl mx-auto px-4 h-14 flex items-center gap-4">
     <div class="flex items-center gap-2 shrink-0">
       <div class="w-7 h-7 rounded-md bg-fpl-purple flex items-center justify-center">
         <span class="text-fpl-green font-bold text-xs">FPL</span>
       </div>
       <span class="font-bold text-fpl-purple text-sm tracking-wide">Analytics</span>
     </div>
-
-    <!-- Nav -->
-    <nav id="nav" class="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
-      <button class="nav-btn active" data-view="top">Top</button>
+    <nav id="nav" class="flex items-center gap-0.5 overflow-x-auto ml-2">
+      <button class="nav-btn active" data-view="top">Top Players</button>
       <button class="nav-btn" data-view="search">Search</button>
       <button class="nav-btn" data-view="fixtures">Fixtures</button>
-      <button class="nav-btn" data-view="value">Value</button>
+      <button class="nav-btn" data-view="fdr">FDR</button>
+      <button class="nav-btn" data-view="value">Best Value</button>
       <button class="nav-btn" data-view="dream">Dream XI</button>
       <button class="nav-btn" data-view="manager">Manager</button>
       <button class="nav-btn ai-tab" data-view="ai">✦ AI Analyst</button>
     </nav>
-
   </div>
 </header>
 
-<style>
-  .nav-btn {
-    white-space: nowrap;
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 0.35rem 0.75rem;
-    border-radius: 9999px;
-    border: none;
-    background: none;
-    color: #6b7280;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .nav-btn:hover { background: #f3f4f6; color: #111827; }
-  .nav-btn.active { background: #37003c; color: white; }
-  .nav-btn.ai-tab { color: #00a876; border: 1px solid #00c48c40; }
-  .nav-btn.ai-tab:hover { background: #00c48c12; }
-  .nav-btn.ai-tab.active { background: #00c48c; color: white; border-color: transparent; }
-</style>
-
-<!-- ── MAIN ── -->
-<main class="max-w-5xl mx-auto px-4 py-8 pb-20">
+<main class="max-w-6xl mx-auto px-4 py-8 pb-20">
 
   <!-- TOP PLAYERS -->
   <div id="view-top" class="view active">
-    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Top Players</h1>
+    <h1 class="text-2xl font-bold mb-0.5">Top Players</h1>
     <p class="text-sm text-gray-500 mb-6">Highest scoring players this season</p>
-    <div id="top-content">
-      <div class="flex items-center gap-3 py-10 text-sm text-gray-400">
-        <svg class="spinner w-4 h-4 text-fpl-green" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-        Fetching player data…
-      </div>
-    </div>
+    <div id="top-content">LOADING</div>
   </div>
 
   <!-- SEARCH -->
   <div id="view-search" class="view">
-    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Player Search</h1>
-    <p class="text-sm text-gray-500 mb-6">Find any player in the league</p>
+    <h1 class="text-2xl font-bold mb-0.5">Player Search</h1>
+    <p class="text-sm text-gray-500 mb-5">Find any player in the league</p>
     <div class="relative mb-4">
-      <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
       <input id="search-input" type="text" autocomplete="off" placeholder="Search players…"
-        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-fpl-green focus:border-transparent" />
+        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-fpl-green focus:border-transparent"/>
     </div>
     <p id="search-count" class="text-xs text-gray-400 mb-3"></p>
     <div id="search-results" class="flex flex-col gap-2"></div>
@@ -145,52 +151,52 @@
 
   <!-- FIXTURES -->
   <div id="view-fixtures" class="view">
-    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Fixtures</h1>
-    <p class="text-sm text-gray-500 mb-4">Upcoming matches · difficulty rated</p>
+    <h1 class="text-2xl font-bold mb-0.5">Fixtures</h1>
+    <p class="text-sm text-gray-500 mb-4">Upcoming matches with difficulty ratings</p>
     <div class="flex items-center gap-4 mb-5">
-      <div class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Easy</div>
-      <div class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Medium</div>
-      <div class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span> Hard</div>
+      <div class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>Easy (1–2)</div>
+      <div class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>Medium (3)</div>
+      <div class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span>Hard (4–5)</div>
     </div>
-    <div id="fixtures-content">
-      <div class="flex items-center gap-3 py-10 text-sm text-gray-400">
-        <svg class="spinner w-4 h-4 text-fpl-green" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-        Loading fixtures…
-      </div>
+    <div id="fixtures-content">LOADING</div>
+  </div>
+
+  <!-- FDR TABLE -->
+  <div id="view-fdr" class="view fdr-view">
+    <h1 class="text-2xl font-bold mb-0.5">Fixture Difficulty Rating</h1>
+    <p class="text-sm text-gray-500 mb-2">Upcoming 8 gameweeks for all 20 teams</p>
+    <div class="flex items-center gap-3 mb-5 flex-wrap">
+      <span class="fdr-cell fdr-1">1–2</span><span class="text-xs text-gray-500">Very easy</span>
+      <span class="fdr-cell fdr-3 ml-3">3</span><span class="text-xs text-gray-500">Medium</span>
+      <span class="fdr-cell fdr-4 ml-3">4</span><span class="text-xs text-gray-500">Hard</span>
+      <span class="fdr-cell fdr-5 ml-3">5</span><span class="text-xs text-gray-500">Very hard</span>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-100 overflow-auto shadow-sm">
+      <div id="fdr-content">LOADING</div>
     </div>
   </div>
 
   <!-- BEST VALUE -->
   <div id="view-value" class="view">
-    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Best Value</h1>
-    <p class="text-sm text-gray-500 mb-6">Points per £1m — budget-efficient picks</p>
-    <div id="value-content">
-      <div class="flex items-center gap-3 py-10 text-sm text-gray-400">
-        <svg class="spinner w-4 h-4 text-fpl-green" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-        Calculating…
-      </div>
-    </div>
+    <h1 class="text-2xl font-bold mb-0.5">Best Value</h1>
+    <p class="text-sm text-gray-500 mb-6">Points per £1m — budget-smart picks</p>
+    <div id="value-content">LOADING</div>
   </div>
 
   <!-- DREAM XI -->
   <div id="view-dream" class="view">
-    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Dream XI</h1>
+    <h1 class="text-2xl font-bold mb-0.5">Dream XI</h1>
     <p class="text-sm text-gray-500 mb-6">Random all-star lineup · 1-4-4-2</p>
-    <div id="dream-content">
-      <div class="flex items-center gap-3 py-10 text-sm text-gray-400">
-        <svg class="spinner w-4 h-4 text-fpl-green" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
-        Assembling squad…
-      </div>
-    </div>
+    <div id="dream-content">LOADING</div>
   </div>
 
   <!-- MANAGER -->
   <div id="view-manager" class="view">
-    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Manager Lookup</h1>
+    <h1 class="text-2xl font-bold mb-0.5">Manager Lookup</h1>
     <p class="text-sm text-gray-500 mb-6">Enter your FPL Manager ID</p>
     <div class="flex gap-2 mb-6">
       <input id="manager-id" type="number" placeholder="e.g. 123456"
-        class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-fpl-green focus:border-transparent" />
+        class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-fpl-green focus:border-transparent"/>
       <button id="manager-btn"
         class="px-5 py-2.5 rounded-xl bg-fpl-purple text-white text-sm font-semibold hover:bg-purple-900 transition-colors">
         Look up
@@ -204,48 +210,52 @@
     <div class="flex w-full h-full overflow-hidden">
 
       <!-- Sidebar -->
-      <aside class="w-44 shrink-0 bg-white border-r border-gray-100 flex flex-col overflow-y-auto">
+      <aside class="w-48 shrink-0 bg-white border-r border-gray-100 flex flex-col overflow-y-auto">
         <div class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-widest">Topics</div>
-        <div id="ai-topics" class="flex flex-col gap-0.5 px-2 pb-4">
+        <div id="ai-topics" class="flex flex-col gap-0.5 px-2">
           <button class="ai-topic" data-prompt="Who are the best captain picks this gameweek based on upcoming fixtures and recent form?">Captain pick</button>
-          <button class="ai-topic" data-prompt="Which players are good transfer targets this gameweek based on fixtures and value?">Transfer targets</button>
+          <button class="ai-topic" data-prompt="Which players are the best transfer targets this gameweek based on fixtures, form and value?">Transfer targets</button>
           <button class="ai-topic" data-prompt="Who are the best differential picks this week — high upside, low ownership?">Differentials</button>
-          <button class="ai-topic" data-prompt="Analyse the upcoming fixtures for all 20 Premier League teams. Which teams have the easiest run?">Fixture runs</button>
+          <button class="ai-topic" data-prompt="Analyse the upcoming fixtures for all 20 Premier League teams. Which teams have the easiest run of games?">Fixture runs</button>
           <button class="ai-topic" data-prompt="Which budget players under £5.5m offer the best points-per-million value right now?">Budget gems</button>
           <button class="ai-topic" data-prompt="When is the best time to play the Wildcard chip and who should I target?">Chip strategy</button>
           <button class="ai-topic" data-prompt="Which premium players priced £10m+ are worth their price tag this season?">Premium picks</button>
-          <button class="ai-topic" data-prompt="Who are the most in-form players over the last 5 gameweeks?">In-form players</button>
+          <button class="ai-topic" data-prompt="Who are the most in-form players over the last 5 gameweeks based on the form data?">In-form players</button>
         </div>
+
+        <!-- API Key section -->
         <div class="mt-auto border-t border-gray-100">
-          <!-- API Key input -->
           <div class="px-3 py-3 border-b border-gray-100">
-            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Gemini API Key</div>
-            <div class="flex gap-1">
-              <input id="api-key-input" type="password" placeholder="AIza…"
-                class="flex-1 min-w-0 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-fpl-green font-mono" />
+            <div class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
+              Gemini API Key
+            </div>
+            <div class="text-xs text-gray-400 mb-2 leading-snug">
+              Free at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-fpl-green underline">aistudio.google.com</a>
+            </div>
+            <div class="flex gap-1 mb-1.5">
+              <input id="api-key-input" type="password" placeholder="AIzaSy…"
+                class="flex-1 min-w-0 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-fpl-green font-mono"/>
               <button id="api-key-save"
                 class="text-xs px-2 py-1.5 rounded-lg bg-fpl-purple text-white font-semibold hover:bg-purple-900 transition-colors shrink-0">
                 Save
               </button>
             </div>
-            <div id="api-key-status" class="mt-1.5 text-xs text-gray-400"></div>
+            <div id="api-key-status" class="text-xs text-gray-400"></div>
           </div>
-          <!-- Live data badge -->
           <div class="px-3 py-2.5 flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-fpl-green inline-block"></span>
-            <span class="text-xs text-gray-400">Live data injected</span>
+            <span class="text-xs text-gray-400">Live FPL data injected</span>
           </div>
         </div>
       </aside>
 
-      <!-- Chat -->
+      <!-- Chat area -->
       <div class="flex-1 flex flex-col bg-gray-50 overflow-hidden">
         <div id="ai-messages" class="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-4">
-          <!-- welcome -->
           <div id="ai-welcome" class="flex flex-col items-center justify-center h-full text-center gap-3 py-12">
             <div class="w-12 h-12 rounded-2xl bg-fpl-purple flex items-center justify-center text-fpl-green font-bold text-lg">FPL</div>
             <div class="font-bold text-gray-800 text-lg">FPL AI Analyst</div>
-            <div class="text-sm text-gray-500">Powered by Claude · live player stats &amp; fixtures baked in</div>
+            <div class="text-sm text-gray-500">Powered by Gemini 2.0 Flash · live player data baked in</div>
             <div class="flex flex-col gap-2 mt-2">
               <button class="ai-suggestion" data-prompt="Who should I captain this gameweek?">Best captain this week?</button>
               <button class="ai-suggestion" data-prompt="Who are the best players to transfer in right now based on fixtures and form?">Who to transfer in?</button>
@@ -253,8 +263,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Input -->
         <div class="border-t border-gray-200 bg-white px-4 py-3 flex gap-2 items-end">
           <textarea id="ai-input" rows="1" placeholder="Ask about transfers, captaincy, fixtures…"
             class="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fpl-green focus:border-transparent max-h-32 overflow-y-auto leading-relaxed"></textarea>
@@ -269,81 +277,6 @@
   </div>
 
 </main>
-
-<style>
-  .ai-topic {
-    text-align: left;
-    font-size: 0.75rem;
-    color: #6b7280;
-    padding: 0.45rem 0.6rem;
-    border-radius: 0.5rem;
-    border: none;
-    background: none;
-    cursor: pointer;
-    transition: all 0.15s;
-    width: 100%;
-  }
-  .ai-topic:hover { background: #f3f4f6; color: #111827; }
-  .ai-topic.active { background: #00c48c18; color: #00a876; font-weight: 500; }
-
-  .ai-suggestion {
-    font-size: 0.75rem;
-    color: #374151;
-    border: 1px solid #e5e7eb;
-    background: white;
-    padding: 0.4rem 0.9rem;
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .ai-suggestion:hover { border-color: #00c48c; color: #00a876; }
-
-  .player-card {
-    display: grid;
-    align-items: center;
-    gap: 0.6rem;
-    background: white;
-    border: 1px solid #f0f0f0;
-    border-radius: 0.875rem;
-    padding: 0.65rem 1rem;
-    transition: box-shadow 0.15s, border-color 0.15s;
-  }
-  .player-card:hover { border-color: #00c48c40; box-shadow: 0 2px 8px rgba(0,196,140,0.08); }
-  .player-card.top-layout { grid-template-columns: 2rem 2.5rem 1fr auto auto; }
-  .player-card.value-layout { grid-template-columns: 2rem 2.5rem 1fr auto auto auto; }
-
-  .rank { font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; color: #9ca3af; text-align: center; }
-  .rank.gold { color: #d97706; font-weight: 600; }
-  .player-name-el { font-size: 0.875rem; font-weight: 600; color: #111827; }
-  .player-meta { font-size: 0.7rem; color: #9ca3af; margin-top: 1px; }
-  .pos-badge { font-size: 0.65rem; font-weight: 600; padding: 2px 7px; border-radius: 9999px; background: #f3f4f6; color: #6b7280; white-space: nowrap; }
-  .pos-badge.GKP { background: #fef9c3; color: #a16207; }
-  .pos-badge.DEF { background: #dcfce7; color: #15803d; }
-  .pos-badge.MID { background: #dbeafe; color: #1d4ed8; }
-  .pos-badge.FWD { background: #fee2e2; color: #dc2626; }
-  .pts { font-size: 0.8rem; font-weight: 700; color: #00a876; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
-  .val-score { font-size: 0.7rem; font-weight: 600; color: #d97706; font-family: 'JetBrains Mono', monospace; }
-  .price { font-size: 0.7rem; color: #9ca3af; font-family: 'JetBrains Mono', monospace; }
-
-  .diff-pip { display: inline-block; width: 8px; height: 8px; border-radius: 9999px; vertical-align: middle; }
-  .diff-1, .diff-2 { background: #34d399; }
-  .diff-3 { background: #fbbf24; }
-  .diff-4, .diff-5 { background: #f87171; }
-
-  .pitch-card {
-    display: flex; flex-direction: column; align-items: center;
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 0.75rem;
-    padding: 0.65rem 0.75rem 0.5rem;
-    min-width: 78px; max-width: 88px;
-    text-align: center;
-    cursor: default;
-    transition: transform 0.15s;
-  }
-  .pitch-card:hover { transform: translateY(-3px); }
-</style>
 
 <script src="script.js"></script>
 </body>
