@@ -1,647 +1,336 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FPL Analytics</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<style>
-  :root {
-    --green: #00FF87;
-    --green-dim: #00c968;
-    --dark: #0a0f0d;
-    --dark2: #111a14;
-    --dark3: #1a2620;
-    --card: #162019;
-    --border: #243328;
-    --text: #e8f0ea;
-    --muted: #6b8a72;
-    --red: #ff4d6d;
-    --amber: #ffd60a;
-    --radius: 12px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--dark);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ── BG TEXTURE ── */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background:
-      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,255,135,0.08) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 40% at 90% 80%, rgba(0,255,135,0.04) 0%, transparent 60%);
-    pointer-events: none; z-index: 0;
-  }
-
-  /* ── HEADER ── */
-  header {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(10,15,13,0.85);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    display: flex; align-items: center; justify-content: space-between;
-    height: 60px;
-  }
-  .logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 26px; letter-spacing: 3px;
-    color: var(--green);
-  }
-  .logo span { color: var(--text); }
-
-  /* ── NAV ── */
-  nav {
-    display: flex; gap: 2px;
-  }
-  nav button {
-    background: none; border: none; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
-    color: var(--muted); padding: 6px 14px; border-radius: 20px;
-    letter-spacing: 0.5px; text-transform: uppercase;
-    transition: all 0.2s;
-  }
-  nav button:hover { color: var(--text); background: var(--dark3); }
-  nav button.active { color: var(--dark); background: var(--green); font-weight: 600; }
-
-  /* ── MAIN ── */
-  main {
-    position: relative; z-index: 1;
-    max-width: 960px; margin: 0 auto;
-    padding: 32px 20px 80px;
-  }
-
-  /* ── VIEW ── */
-  .view { display: none; animation: fadeIn 0.3s ease; }
-  .view.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-  /* ── SECTION TITLE ── */
-  .section-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 40px; letter-spacing: 2px;
-    color: var(--text); margin-bottom: 4px;
-  }
-  .section-sub {
-    font-size: 13px; color: var(--muted); margin-bottom: 28px;
-  }
-
-  /* ── LOADING / ERROR ── */
-  .loader {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 13px; color: var(--muted); padding: 40px 0;
-  }
-  .spinner {
-    width: 18px; height: 18px; border-radius: 50%;
-    border: 2px solid var(--border);
-    border-top-color: var(--green);
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .error-msg {
-    background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.3);
-    border-radius: var(--radius); padding: 16px 20px;
-    font-size: 14px; color: var(--red);
-  }
-
-  /* ── CARDS ── */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px 20px;
-    transition: border-color 0.2s, transform 0.2s;
-  }
-  .card:hover { border-color: rgba(0,255,135,0.3); transform: translateY(-1px); }
-
-  /* ── PLAYER TABLE ── */
-  .player-list { display: flex; flex-direction: column; gap: 8px; }
-  .player-row {
-    display: grid; align-items: center;
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 16px;
-    transition: border-color 0.2s;
-    cursor: default;
-  }
-  .player-row:hover { border-color: rgba(0,255,135,0.25); }
-  .player-row.top-row { grid-template-columns: 32px 1fr 140px 80px; gap: 12px; }
-  .rank-num {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px; color: var(--muted); text-align: center;
-  }
-  .rank-num.gold { color: var(--amber); font-weight: 600; }
-  .player-name { font-weight: 600; font-size: 14px; }
-  .player-team { font-size: 12px; color: var(--muted); margin-top: 1px; }
-  .badge {
-    font-size: 11px; font-weight: 500;
-    padding: 2px 8px; border-radius: 20px;
-    background: var(--dark3); color: var(--muted);
-    justify-self: start;
-  }
-  .pts-chip {
-    font-family: 'DM Mono', monospace;
-    font-size: 14px; font-weight: 600;
-    color: var(--green); text-align: right;
-  }
-
-  /* ── SEARCH ── */
-  .search-wrap {
-    position: relative; margin-bottom: 20px;
-  }
-  .search-wrap input {
-    width: 100%; background: var(--card); border: 1px solid var(--border);
-    border-radius: 30px; padding: 12px 20px 12px 46px;
-    font-family: 'DM Sans', sans-serif; font-size: 14px;
-    color: var(--text); outline: none;
-    transition: border-color 0.2s;
-  }
-  .search-wrap input:focus { border-color: var(--green); }
-  .search-wrap input::placeholder { color: var(--muted); }
-  .search-icon {
-    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
-    color: var(--muted); font-size: 16px; pointer-events: none;
-  }
-  .search-count {
-    font-size: 12px; color: var(--muted); margin-bottom: 14px;
-  }
-
-  /* ── FIXTURES ── */
-  .fixture-grid { display: flex; flex-direction: column; gap: 8px; }
-  .fixture-row {
-    display: grid; grid-template-columns: 1fr auto 1fr auto;
-    align-items: center; gap: 12px;
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 16px;
-  }
-  .team-name { font-size: 13px; font-weight: 500; }
-  .team-name.away { text-align: right; }
-  .vs-badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px; color: var(--muted);
-    background: var(--dark3); padding: 3px 7px; border-radius: 4px;
-  }
-  .diff-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .diff-1, .diff-2 { background: #00c96870; border: 1.5px solid var(--green-dim); }
-  .diff-3 { background: rgba(255,214,10,0.3); border: 1.5px solid var(--amber); }
-  .diff-4, .diff-5 { background: rgba(255,77,109,0.3); border: 1.5px solid var(--red); }
-  .diff-wrap { display: flex; gap: 4px; align-items: center; }
-  .diff-label { font-size: 11px; color: var(--muted); }
-
-  /* ── BEST VALUE ── */
-  .value-row { grid-template-columns: 32px 1fr 90px 80px 80px; gap: 12px; }
-  .value-chip {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px; color: var(--amber);
-  }
-  .price-chip {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px; color: var(--muted);
-  }
-
-  /* ── DREAM XI ── */
-  .pitch {
-    background: linear-gradient(180deg, #0d2a18 0%, #0a1f12 100%);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px 20px;
-    position: relative; overflow: hidden;
-  }
-  .pitch::before {
-    content: '';
-    position: absolute; inset: 0;
-    background:
-      repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 60px,
-        rgba(255,255,255,0.02) 60px,
-        rgba(255,255,255,0.02) 61px
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FPL Analytics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            fpl: {
+              green:  '#00c48c',
+              greend: '#00a876',
+              purple: '#37003c',
+              light:  '#f4f4f4',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    [x-cloak] { display: none; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .ai-view.active { display: flex; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .view.active { animation: fadeUp 0.2s ease; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 0.75s linear infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .cursor { animation: blink 0.9s step-end infinite; }
+    @keyframes dot-pulse {
+      0%,100% { transform: scale(0.7); opacity: 0.4; }
+      50%      { transform: scale(1);   opacity: 1; }
+    }
+    .dot-1 { animation: dot-pulse 1.2s ease-in-out infinite; }
+    .dot-2 { animation: dot-pulse 1.2s ease-in-out 0.2s infinite; }
+    .dot-3 { animation: dot-pulse 1.2s ease-in-out 0.4s infinite; }
+    /* pitch stripe background */
+    .pitch-bg {
+      background-color: #2d7a4f;
+      background-image: repeating-linear-gradient(
+        0deg, transparent, transparent 68px,
+        rgba(0,0,0,0.06) 68px, rgba(0,0,0,0.06) 69px
       );
-    pointer-events: none;
-  }
-  .pitch-row {
-    display: flex; justify-content: center; gap: 12px;
-    margin-bottom: 16px; flex-wrap: wrap;
-  }
-  .pitch-row:last-child { margin-bottom: 0; }
-  .player-card-pitch {
-    background: rgba(0,255,135,0.08);
-    border: 1px solid rgba(0,255,135,0.25);
-    border-radius: 10px; padding: 10px 14px;
-    text-align: center; min-width: 90px;
-    transition: transform 0.2s;
-  }
-  .player-card-pitch:hover { transform: translateY(-3px); }
-  .pitch-pos {
-    font-size: 9px; font-weight: 600; letter-spacing: 1px;
-    color: var(--green); text-transform: uppercase; margin-bottom: 4px;
-  }
-  .pitch-name { font-size: 11px; font-weight: 600; line-height: 1.3; }
-  .pitch-team { font-size: 10px; color: var(--muted); }
-  .pitch-pts { font-size: 10px; color: var(--green); font-family: 'DM Mono', monospace; margin-top: 2px; }
-  .gen-btn {
-    margin-top: 20px; display: block; width: 100%;
-    background: var(--green); color: var(--dark);
-    border: none; border-radius: 30px; padding: 13px;
-    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 700;
-    cursor: pointer; letter-spacing: 0.5px;
-    transition: background 0.2s, transform 0.1s;
-  }
-  .gen-btn:hover { background: var(--green-dim); transform: scale(0.99); }
-  .gen-btn:active { transform: scale(0.97); }
-
-  /* ── MANAGER LOOKUP ── */
-  .manager-form {
-    display: flex; gap: 10px; margin-bottom: 24px;
-  }
-  .manager-form input {
-    flex: 1; background: var(--card); border: 1px solid var(--border);
-    border-radius: 30px; padding: 12px 20px;
-    font-family: 'DM Mono', monospace; font-size: 14px;
-    color: var(--text); outline: none; transition: border-color 0.2s;
-  }
-  .manager-form input:focus { border-color: var(--green); }
-  .manager-form input::placeholder { color: var(--muted); font-family: 'DM Sans', sans-serif; }
-  .btn-green {
-    background: var(--green); color: var(--dark);
-    border: none; border-radius: 30px; padding: 12px 24px;
-    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
-    cursor: pointer; transition: background 0.2s;
-    white-space: nowrap;
-  }
-  .btn-green:hover { background: var(--green-dim); }
-  .manager-card {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-  .stat-tile {
-    background: var(--dark3); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 20px;
-    text-align: center;
-  }
-  .stat-tile .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-  .stat-tile .value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--green); letter-spacing: 1px; }
-  .stat-tile .value.small { font-size: 18px; color: var(--text); }
-
-  /* ── LEGEND ── */
-  .legend {
-    display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
-  }
-  .legend-item {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px; color: var(--muted);
-  }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 600px) {
-    .logo { font-size: 20px; }
-    nav button { font-size: 10px; padding: 5px 9px; }
-    .section-title { font-size: 30px; }
-    .player-row.top-row { grid-template-columns: 28px 1fr 90px 60px; }
-    .value-row { grid-template-columns: 28px 1fr 70px 60px 60px; }
-    .manager-card { grid-template-columns: 1fr; }
-    .fixture-row { grid-template-columns: 1fr auto 1fr; }
-    .fixture-row .diff-wrap { display: none; }
-  }
-</style>
+    }
+    /* markdown in AI bubbles */
+    .prose-bubble p { margin: 0 0 0.5rem; }
+    .prose-bubble p:last-child { margin: 0; }
+    .prose-bubble ul { list-style: disc; padding-left: 1.2rem; margin: 0.4rem 0; }
+    .prose-bubble ol { list-style: decimal; padding-left: 1.2rem; margin: 0.4rem 0; }
+    .prose-bubble li { margin: 0.2rem 0; }
+    .prose-bubble strong { font-weight: 600; color: #00a876; }
+    .prose-bubble h3 { font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #37003c; margin: 0.75rem 0 0.3rem; }
+    .prose-bubble code { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background: #f0f0f0; padding: 1px 4px; border-radius: 3px; }
+  </style>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-900 font-sans min-h-screen">
 
-<header>
-  <div class="logo">FPL<span>Analytics</span></div>
-  <nav id="nav">
-    <button class="active" data-view="top">Top</button>
-    <button data-view="search">Search</button>
-    <button data-view="fixtures">Fixtures</button>
-    <button data-view="value">Value</button>
-    <button data-view="dream">Dream XI</button>
-    <button data-view="manager">Manager</button>
-  </nav>
+<!-- ── HEADER ── -->
+<header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+  <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-2 shrink-0">
+      <div class="w-7 h-7 rounded-md bg-fpl-purple flex items-center justify-center">
+        <span class="text-fpl-green font-bold text-xs">FPL</span>
+      </div>
+      <span class="font-bold text-fpl-purple text-sm tracking-wide">Analytics</span>
+    </div>
+
+    <!-- Nav -->
+    <nav id="nav" class="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
+      <button class="nav-btn active" data-view="top">Top</button>
+      <button class="nav-btn" data-view="search">Search</button>
+      <button class="nav-btn" data-view="fixtures">Fixtures</button>
+      <button class="nav-btn" data-view="value">Value</button>
+      <button class="nav-btn" data-view="dream">Dream XI</button>
+      <button class="nav-btn" data-view="manager">Manager</button>
+      <button class="nav-btn ai-tab" data-view="ai">✦ AI Analyst</button>
+    </nav>
+
+  </div>
 </header>
 
-<main>
+<style>
+  .nav-btn {
+    white-space: nowrap;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    border: none;
+    background: none;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { background: #f3f4f6; color: #111827; }
+  .nav-btn.active { background: #37003c; color: white; }
+  .nav-btn.ai-tab { color: #00a876; border: 1px solid #00c48c40; }
+  .nav-btn.ai-tab:hover { background: #00c48c12; }
+  .nav-btn.ai-tab.active { background: #00c48c; color: white; border-color: transparent; }
+</style>
+
+<!-- ── MAIN ── -->
+<main class="max-w-5xl mx-auto px-4 py-8 pb-20">
 
   <!-- TOP PLAYERS -->
   <div id="view-top" class="view active">
-    <div class="section-title">Top Players</div>
-    <div class="section-sub">Highest scoring players this season</div>
-    <div id="top-content"><div class="loader"><div class="spinner"></div> Fetching player data…</div></div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Top Players</h1>
+    <p class="text-sm text-gray-500 mb-6">Highest scoring players this season</p>
+    <div id="top-content">
+      <div class="flex items-center gap-3 py-10 text-sm text-gray-400">
+        <svg class="spinner w-4 h-4 text-fpl-green" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+        Fetching player data…
+      </div>
+    </div>
   </div>
 
   <!-- SEARCH -->
   <div id="view-search" class="view">
-    <div class="section-title">Player Search</div>
-    <div class="section-sub">Find any player in the league</div>
-    <div class="search-wrap">
-      <span class="search-icon">⌕</span>
-      <input type="text" id="search-input" placeholder="Type a player name…" autocomplete="off" />
+    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Player Search</h1>
+    <p class="text-sm text-gray-500 mb-6">Find any player in the league</p>
+    <div class="relative mb-4">
+      <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input id="search-input" type="text" autocomplete="off" placeholder="Search players…"
+        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-fpl-green focus:border-transparent" />
     </div>
-    <div id="search-count" class="search-count"></div>
-    <div id="search-results" class="player-list"></div>
+    <p id="search-count" class="text-xs text-gray-400 mb-3"></p>
+    <div id="search-results" class="flex flex-col gap-2"></div>
   </div>
 
   <!-- FIXTURES -->
   <div id="view-fixtures" class="view">
-    <div class="section-title">Fixtures</div>
-    <div class="section-sub">Upcoming matches with difficulty ratings</div>
-    <div class="legend">
-      <div class="legend-item"><div class="diff-dot diff-1"></div> Easy (1–2)</div>
-      <div class="legend-item"><div class="diff-dot diff-3"></div> Medium (3)</div>
-      <div class="legend-item"><div class="diff-dot diff-5"></div> Hard (4–5)</div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Fixtures</h1>
+    <p class="text-sm text-gray-500 mb-4">Upcoming matches · difficulty rated</p>
+    <div class="flex items-center gap-4 mb-5">
+      <div class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Easy</div>
+      <div class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Medium</div>
+      <div class="flex items-center gap-1.5 text-xs text-gray-500"><span class="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"></span> Hard</div>
     </div>
-    <div id="fixtures-content"><div class="loader"><div class="spinner"></div> Loading fixtures…</div></div>
+    <div id="fixtures-content">
+      <div class="flex items-center gap-3 py-10 text-sm text-gray-400">
+        <svg class="spinner w-4 h-4 text-fpl-green" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+        Loading fixtures…
+      </div>
+    </div>
   </div>
 
   <!-- BEST VALUE -->
   <div id="view-value" class="view">
-    <div class="section-title">Best Value</div>
-    <div class="section-sub">Points per £1m — the smarter metric</div>
-    <div id="value-content"><div class="loader"><div class="spinner"></div> Calculating value…</div></div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Best Value</h1>
+    <p class="text-sm text-gray-500 mb-6">Points per £1m — budget-efficient picks</p>
+    <div id="value-content">
+      <div class="flex items-center gap-3 py-10 text-sm text-gray-400">
+        <svg class="spinner w-4 h-4 text-fpl-green" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+        Calculating…
+      </div>
+    </div>
   </div>
 
   <!-- DREAM XI -->
   <div id="view-dream" class="view">
-    <div class="section-title">Dream XI</div>
-    <div class="section-sub">A random all-star lineup from the current player pool</div>
-    <div id="dream-content"><div class="loader"><div class="spinner"></div> Assembling squad…</div></div>
+    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Dream XI</h1>
+    <p class="text-sm text-gray-500 mb-6">Random all-star lineup · 1-4-4-2</p>
+    <div id="dream-content">
+      <div class="flex items-center gap-3 py-10 text-sm text-gray-400">
+        <svg class="spinner w-4 h-4 text-fpl-green" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+        Assembling squad…
+      </div>
+    </div>
   </div>
 
   <!-- MANAGER -->
   <div id="view-manager" class="view">
-    <div class="section-title">Manager Lookup</div>
-    <div class="section-sub">Enter your FPL Manager ID to see your stats</div>
-    <div class="manager-form">
-      <input type="number" id="manager-id" placeholder="e.g. 123456" />
-      <button class="btn-green" id="manager-btn">Check</button>
+    <h1 class="text-2xl font-bold text-gray-900 mb-0.5">Manager Lookup</h1>
+    <p class="text-sm text-gray-500 mb-6">Enter your FPL Manager ID</p>
+    <div class="flex gap-2 mb-6">
+      <input id="manager-id" type="number" placeholder="e.g. 123456"
+        class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-fpl-green focus:border-transparent" />
+      <button id="manager-btn"
+        class="px-5 py-2.5 rounded-xl bg-fpl-purple text-white text-sm font-semibold hover:bg-purple-900 transition-colors">
+        Look up
+      </button>
     </div>
     <div id="manager-content"></div>
   </div>
 
+  <!-- AI ANALYST -->
+  <div id="view-ai" class="view ai-view -mx-4 -mt-8 -mb-20" style="height:calc(100vh - 56px)">
+    <div class="flex w-full h-full overflow-hidden">
+
+      <!-- Sidebar -->
+      <aside class="w-44 shrink-0 bg-white border-r border-gray-100 flex flex-col overflow-y-auto">
+        <div class="px-3 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-widest">Topics</div>
+        <div id="ai-topics" class="flex flex-col gap-0.5 px-2 pb-4">
+          <button class="ai-topic" data-prompt="Who are the best captain picks this gameweek based on upcoming fixtures and recent form?">Captain pick</button>
+          <button class="ai-topic" data-prompt="Which players are good transfer targets this gameweek based on fixtures and value?">Transfer targets</button>
+          <button class="ai-topic" data-prompt="Who are the best differential picks this week — high upside, low ownership?">Differentials</button>
+          <button class="ai-topic" data-prompt="Analyse the upcoming fixtures for all 20 Premier League teams. Which teams have the easiest run?">Fixture runs</button>
+          <button class="ai-topic" data-prompt="Which budget players under £5.5m offer the best points-per-million value right now?">Budget gems</button>
+          <button class="ai-topic" data-prompt="When is the best time to play the Wildcard chip and who should I target?">Chip strategy</button>
+          <button class="ai-topic" data-prompt="Which premium players priced £10m+ are worth their price tag this season?">Premium picks</button>
+          <button class="ai-topic" data-prompt="Who are the most in-form players over the last 5 gameweeks?">In-form players</button>
+        </div>
+        <div class="mt-auto px-3 py-3 border-t border-gray-100">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-fpl-green inline-block"></span>
+            <span class="text-xs text-gray-400">Live data injected</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Chat -->
+      <div class="flex-1 flex flex-col bg-gray-50 overflow-hidden">
+        <div id="ai-messages" class="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-4">
+          <!-- welcome -->
+          <div id="ai-welcome" class="flex flex-col items-center justify-center h-full text-center gap-3 py-12">
+            <div class="w-12 h-12 rounded-2xl bg-fpl-purple flex items-center justify-center text-fpl-green font-bold text-lg">FPL</div>
+            <div class="font-bold text-gray-800 text-lg">FPL AI Analyst</div>
+            <div class="text-sm text-gray-500">Powered by Claude · live player stats &amp; fixtures baked in</div>
+            <div class="flex flex-col gap-2 mt-2">
+              <button class="ai-suggestion" data-prompt="Who should I captain this gameweek?">Best captain this week?</button>
+              <button class="ai-suggestion" data-prompt="Who are the best players to transfer in right now based on fixtures and form?">Who to transfer in?</button>
+              <button class="ai-suggestion" data-prompt="Who are the best differential picks with under 10% ownership?">Best differentials?</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input -->
+        <div class="border-t border-gray-200 bg-white px-4 py-3 flex gap-2 items-end">
+          <textarea id="ai-input" rows="1" placeholder="Ask about transfers, captaincy, fixtures…"
+            class="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-fpl-green focus:border-transparent max-h-32 overflow-y-auto leading-relaxed"></textarea>
+          <button id="ai-send"
+            class="shrink-0 px-4 py-2.5 rounded-xl bg-fpl-green text-white text-sm font-semibold hover:bg-fpl-greend transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            Send
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 </main>
 
-<script>
-// ── GLOBAL STATE ──
-const state = { players: [], teams: [], fixtures: [], loaded: false };
-
-// ── PROXY to bypass CORS ──
-const PROXY = 'https://corsproxy.io/?';
-const FPL_BASE = 'https://fantasy.premierleague.com/api';
-
-async function fetchFPL(path) {
-  const url = PROXY + encodeURIComponent(FPL_BASE + path);
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
-}
-
-// ── INIT ──
-async function init() {
-  try {
-    const data = await fetchFPL('/bootstrap-static/');
-    state.players = data.elements;
-    state.teams = data.teams;
-    state.loaded = true;
-    renderTop();
-    initSearch();
-  } catch (e) {
-    document.getElementById('top-content').innerHTML =
-      `<div class="error-msg">⚠ Could not load FPL data. The API may be rate-limited or unavailable. Try again later.<br><small style="opacity:.6">${e.message}</small></div>`;
+<style>
+  .ai-topic {
+    text-align: left;
+    font-size: 0.75rem;
+    color: #6b7280;
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.5rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    width: 100%;
   }
-}
+  .ai-topic:hover { background: #f3f4f6; color: #111827; }
+  .ai-topic.active { background: #00c48c18; color: #00a876; font-weight: 500; }
 
-async function initFixtures() {
-  const el = document.getElementById('fixtures-content');
-  try {
-    const data = await fetchFPL('/fixtures/?future=1');
-    state.fixtures = data.slice(0, 40);
-    renderFixtures();
-  } catch (e) {
-    el.innerHTML = `<div class="error-msg">⚠ Could not load fixtures. ${e.message}</div>`;
+  .ai-suggestion {
+    font-size: 0.75rem;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    background: white;
+    padding: 0.4rem 0.9rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.15s;
   }
-}
+  .ai-suggestion:hover { border-color: #00c48c; color: #00a876; }
 
-// ── TEAM NAME ──
-function teamName(id) {
-  const t = state.teams.find(t => t.id === id);
-  return t ? t.short_name : '?';
-}
-
-// ── TOP PLAYERS ──
-function renderTop() {
-  const top = [...state.players].sort((a,b) => b.total_points - a.total_points).slice(0,15);
-  document.getElementById('top-content').innerHTML = `
-    <div class="player-list">
-      ${top.map((p,i) => `
-        <div class="player-row top-row">
-          <div class="rank-num ${i<3?'gold':''}">${i+1}</div>
-          <div>
-            <div class="player-name">${p.first_name} ${p.second_name}</div>
-            <div class="player-team">${teamName(p.team)} · ${posLabel(p.element_type)}</div>
-          </div>
-          <div class="badge">${posLabel(p.element_type)}</div>
-          <div class="pts-chip">${p.total_points} pts</div>
-        </div>
-      `).join('')}
-    </div>`;
-}
-
-function posLabel(type) {
-  return {1:'GKP',2:'DEF',3:'MID',4:'FWD'}[type] || '?';
-}
-
-// ── SEARCH ──
-function initSearch() {
-  const input = document.getElementById('search-input');
-  input.addEventListener('input', () => {
-    const q = input.value.trim().toLowerCase();
-    const count = document.getElementById('search-count');
-    const results = document.getElementById('search-results');
-    if (!q) { count.textContent = ''; results.innerHTML = ''; return; }
-    const matches = state.players.filter(p =>
-      `${p.first_name} ${p.second_name}`.toLowerCase().includes(q)
-    ).slice(0, 20);
-    count.textContent = `${matches.length} player${matches.length!==1?'s':''} found`;
-    results.innerHTML = matches.map(p => `
-      <div class="player-row top-row">
-        <div class="rank-num">—</div>
-        <div>
-          <div class="player-name">${p.first_name} ${p.second_name}</div>
-          <div class="player-team">${teamName(p.team)}</div>
-        </div>
-        <div class="badge">${posLabel(p.element_type)}</div>
-        <div class="pts-chip">${p.total_points} pts</div>
-      </div>
-    `).join('');
-  });
-}
-
-// ── FIXTURES ──
-function renderFixtures() {
-  const el = document.getElementById('fixtures-content');
-  if (!state.fixtures.length) { el.innerHTML = '<div class="error-msg">No upcoming fixtures found.</div>'; return; }
-  el.innerHTML = `<div class="fixture-grid">
-    ${state.fixtures.map(f => {
-      const home = teamName(f.team_h);
-      const away = teamName(f.team_a);
-      const hd = f.team_h_difficulty || 3;
-      const ad = f.team_a_difficulty || 3;
-      const date = f.kickoff_time ? new Date(f.kickoff_time).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : 'TBC';
-      return `
-        <div class="fixture-row">
-          <div class="team-name">${home}</div>
-          <div class="vs-badge">VS</div>
-          <div class="team-name away">${away}</div>
-          <div class="diff-wrap">
-            <div class="diff-dot diff-${hd}"></div>
-            <span class="diff-label">${date}</span>
-            <div class="diff-dot diff-${ad}"></div>
-          </div>
-        </div>`;
-    }).join('')}
-  </div>`;
-}
-
-// ── BEST VALUE ──
-function renderValue() {
-  const el = document.getElementById('value-content');
-  if (!state.loaded) { el.innerHTML = '<div class="loader"><div class="spinner"></div> Loading…</div>'; return; }
-  const valued = state.players
-    .filter(p => p.now_cost > 0 && p.total_points > 0)
-    .map(p => ({...p, value: (p.total_points / (p.now_cost/10)).toFixed(2)}))
-    .sort((a,b) => b.value - a.value)
-    .slice(0,15);
-  el.innerHTML = `<div class="player-list">
-    ${valued.map((p,i) => `
-      <div class="player-row value-row">
-        <div class="rank-num ${i<3?'gold':''}">${i+1}</div>
-        <div>
-          <div class="player-name">${p.first_name} ${p.second_name}</div>
-          <div class="player-team">${teamName(p.team)}</div>
-        </div>
-        <div class="value-chip">${p.value} val</div>
-        <div class="price-chip">£${(p.now_cost/10).toFixed(1)}m</div>
-        <div class="pts-chip">${p.total_points} pts</div>
-      </div>
-    `).join('')}
-  </div>`;
-}
-
-// ── DREAM XI ──
-function generateDream() {
-  const el = document.getElementById('dream-content');
-  if (!state.loaded) { el.innerHTML = '<div class="loader"><div class="spinner"></div> Loading…</div>'; return; }
-
-  const byPos = (type, n) => {
-    const pool = state.players.filter(p => p.element_type === type && p.total_points > 10);
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, n);
-  };
-
-  const gk  = byPos(1,1);
-  const def = byPos(2,4);
-  const mid = byPos(3,4);
-  const fwd = byPos(4,2);
-
-  const card = (p, pos) => `
-    <div class="player-card-pitch">
-      <div class="pitch-pos">${pos}</div>
-      <div class="pitch-name">${p.second_name}</div>
-      <div class="pitch-team">${teamName(p.team)}</div>
-      <div class="pitch-pts">${p.total_points}pts</div>
-    </div>`;
-
-  el.innerHTML = `
-    <div class="pitch">
-      <div class="pitch-row">${gk.map(p=>card(p,'GKP')).join('')}</div>
-      <div class="pitch-row">${def.map(p=>card(p,'DEF')).join('')}</div>
-      <div class="pitch-row">${mid.map(p=>card(p,'MID')).join('')}</div>
-      <div class="pitch-row">${fwd.map(p=>card(p,'FWD')).join('')}</div>
-    </div>
-    <button class="gen-btn" onclick="generateDream()">⟳ Generate New Team</button>`;
-}
-
-// ── MANAGER ──
-document.getElementById('manager-btn').addEventListener('click', async () => {
-  const id = document.getElementById('manager-id').value.trim();
-  const el = document.getElementById('manager-content');
-  if (!id) { el.innerHTML = '<div class="error-msg">Please enter a Manager ID.</div>'; return; }
-  el.innerHTML = '<div class="loader"><div class="spinner"></div> Looking up manager…</div>';
-  try {
-    const url = PROXY + encodeURIComponent(`${FPL_BASE}/entry/${id}/`);
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`Manager not found (HTTP ${r.status})`);
-    const d = await r.json();
-    el.innerHTML = `
-      <div class="card" style="margin-bottom:16px">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Manager</div>
-        <div style="font-size:20px;font-weight:600">${d.player_first_name} ${d.player_last_name}</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:2px">${d.name}</div>
-      </div>
-      <div class="manager-card">
-        <div class="stat-tile">
-          <div class="label">Total Points</div>
-          <div class="value">${d.summary_overall_points}</div>
-        </div>
-        <div class="stat-tile">
-          <div class="label">Overall Rank</div>
-          <div class="value">${(d.summary_overall_rank||0).toLocaleString()}</div>
-        </div>
-        <div class="stat-tile">
-          <div class="label">GW Points</div>
-          <div class="value">${d.summary_event_points}</div>
-        </div>
-        <div class="stat-tile">
-          <div class="label">GW Rank</div>
-          <div class="value">${(d.summary_event_rank||0).toLocaleString()}</div>
-        </div>
-      </div>`;
-  } catch(e) {
-    el.innerHTML = `<div class="error-msg">⚠ ${e.message}</div>`;
+  .player-card {
+    display: grid;
+    align-items: center;
+    gap: 0.6rem;
+    background: white;
+    border: 1px solid #f0f0f0;
+    border-radius: 0.875rem;
+    padding: 0.65rem 1rem;
+    transition: box-shadow 0.15s, border-color 0.15s;
   }
-});
+  .player-card:hover { border-color: #00c48c40; box-shadow: 0 2px 8px rgba(0,196,140,0.08); }
+  .player-card.top-layout { grid-template-columns: 2rem 2.5rem 1fr auto auto; }
+  .player-card.value-layout { grid-template-columns: 2rem 2.5rem 1fr auto auto auto; }
 
-document.getElementById('manager-id').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('manager-btn').click();
-});
+  .rank { font-size: 0.7rem; font-family: 'JetBrains Mono', monospace; color: #9ca3af; text-align: center; }
+  .rank.gold { color: #d97706; font-weight: 600; }
+  .player-name-el { font-size: 0.875rem; font-weight: 600; color: #111827; }
+  .player-meta { font-size: 0.7rem; color: #9ca3af; margin-top: 1px; }
+  .pos-badge { font-size: 0.65rem; font-weight: 600; padding: 2px 7px; border-radius: 9999px; background: #f3f4f6; color: #6b7280; white-space: nowrap; }
+  .pos-badge.GKP { background: #fef9c3; color: #a16207; }
+  .pos-badge.DEF { background: #dcfce7; color: #15803d; }
+  .pos-badge.MID { background: #dbeafe; color: #1d4ed8; }
+  .pos-badge.FWD { background: #fee2e2; color: #dc2626; }
+  .pts { font-size: 0.8rem; font-weight: 700; color: #00a876; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+  .val-score { font-size: 0.7rem; font-weight: 600; color: #d97706; font-family: 'JetBrains Mono', monospace; }
+  .price { font-size: 0.7rem; color: #9ca3af; font-family: 'JetBrains Mono', monospace; }
 
-// ── NAVIGATION ──
-const views = ['top','search','fixtures','value','dream','manager'];
-let fixturesLoaded = false;
+  .diff-pip { display: inline-block; width: 8px; height: 8px; border-radius: 9999px; vertical-align: middle; }
+  .diff-1, .diff-2 { background: #34d399; }
+  .diff-3 { background: #fbbf24; }
+  .diff-4, .diff-5 { background: #f87171; }
 
-document.getElementById('nav').addEventListener('click', e => {
-  const btn = e.target.closest('button[data-view]');
-  if (!btn) return;
-  const v = btn.dataset.view;
-
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
-  views.forEach(id => {
-    const el = document.getElementById(`view-${id}`);
-    el.classList.toggle('active', id === v);
-  });
-
-  if (v === 'fixtures' && !fixturesLoaded) { fixturesLoaded = true; initFixtures(); }
-  if (v === 'value' && state.loaded) renderValue();
-  if (v === 'dream' && state.loaded) generateDream();
-  if (v === 'dream' && !state.loaded) {
-    document.getElementById('dream-content').innerHTML = '<div class="error-msg">Player data not loaded yet.</div>';
+  .pitch-card {
+    display: flex; flex-direction: column; align-items: center;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.75rem 0.5rem;
+    min-width: 78px; max-width: 88px;
+    text-align: center;
+    cursor: default;
+    transition: transform 0.15s;
   }
-});
+  .pitch-card:hover { transform: translateY(-3px); }
+</style>
 
-// ── BOOT ──
-init();
-</script>
+<script src="script.js"></script>
 </body>
 </html>
