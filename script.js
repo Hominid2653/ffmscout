@@ -5,7 +5,8 @@
 // ── CONFIG ───────────────────────────────────
 const PROXY    = 'https://corsproxy.io/?';
 const FPL_BASE = 'https://fantasy.premierleague.com/api';
-const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
+// Proxied to avoid CORS — corsproxy.io forwards all headers including anthropic-version
+const ANTHROPIC_API = () => PROXY + encodeURIComponent('https://api.anthropic.com/v1/messages');
 
 const SHIRT_URL = (code, isGK = false) =>
   `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${code}${isGK ? '_1' : ''}-66.png`;
@@ -388,76 +389,59 @@ function renderMarkdown(text) {
 async function sendAIMessage(text) {
   if (!text) return;
 
-  // clear input
   const inputEl = document.getElementById('ai-input');
+  const sendBtn = document.getElementById('ai-send');
   inputEl.value = '';
   inputEl.style.height = 'auto';
-
-  // disable send while streaming
-  const sendBtn = document.getElementById('ai-send');
   sendBtn.disabled = true;
 
-  // add user bubble
+  // user bubble
   appendMessage('user', text);
   state.aiHistory.push({ role: 'user', content: text });
 
-  // add streaming AI bubble
+  // AI bubble with thinking dots while waiting
   const aiId = appendMessage('assistant', '', true);
   const aiBubble = document.querySelector(`#${aiId} .prose-bubble`);
-
-  // thinking dots if no prose-bubble yet — shouldn't happen, but guard
-  let streamedText = '';
+  aiBubble.innerHTML = `
+    <span class="dot-1 inline-block w-2 h-2 rounded-full bg-gray-300"></span>
+    <span class="dot-2 inline-block w-2 h-2 rounded-full bg-gray-300 mx-1"></span>
+    <span class="dot-3 inline-block w-2 h-2 rounded-full bg-gray-300"></span>`;
 
   try {
-    const systemPrompt = `You are an expert Fantasy Premier League (FPL) analyst. 
+    const systemPrompt = `You are an expert Fantasy Premier League (FPL) analyst.
 You have access to real-time FPL data injected below. Use it to give specific, data-driven advice.
-Be concise but insightful. Format your responses clearly — use **bold** for player names and key points, bullet lists for multiple options.
-Always reference specific stats from the data (points, form, price, fixtures) to justify your recommendations.
-Keep responses focused and actionable — this is a tool for FPL managers making real decisions.
+Be concise but insightful. Use **bold** for player names and key points, bullet lists for multiple options.
+Always reference specific stats (points, form, price, fixtures) to justify your recommendations.
+Keep responses focused and actionable.
 
 ${buildFPLContext()}`;
 
-    const response = await fetch(ANTHROPIC_API, {
+    const response = await fetch(ANTHROPIC_API(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
         system: systemPrompt,
-        stream: true,
         messages: state.aiHistory,
       }),
     });
 
-    if (!response.ok) throw new Error(`API error ${response.status}`);
+    const data = await response.json();
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split('\n');
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') continue;
-        try {
-          const evt = JSON.parse(data);
-          if (evt.type === 'content_block_delta' && evt.delta?.text) {
-            streamedText += evt.delta.text;
-            aiBubble.innerHTML = renderMarkdown(streamedText) +
-              '<span class="inline-block w-0.5 h-3.5 bg-fpl-green cursor align-middle ml-0.5"></span>';
-            document.getElementById('ai-messages').scrollTop = 999999;
-          }
-        } catch {}
-      }
+    if (!response.ok) {
+      throw new Error(data?.error?.message ?? `API error ${response.status}`);
     }
 
-    // finalise — remove cursor
-    aiBubble.innerHTML = renderMarkdown(streamedText);
-    state.aiHistory.push({ role: 'assistant', content: streamedText });
+    const reply = data.content?.find(b => b.type === 'text')?.text ?? '';
+    state.aiHistory.push({ role: 'assistant', content: reply });
+
+    // typewriter render
+    await typewriterRender(aiBubble, reply);
 
   } catch (e) {
     aiBubble.innerHTML = `<span class="text-red-500">⚠ ${escHtml(e.message)}</span>`;
@@ -466,6 +450,23 @@ ${buildFPLContext()}`;
     inputEl.focus();
   }
 }
+
+// Typewriter effect — renders markdown incrementally word-by-word
+async function typewriterRender(el, fullText) {
+  const words = fullText.split(' ');
+  let built = '';
+  for (let i = 0; i < words.length; i++) {
+    built += (i === 0 ? '' : ' ') + words[i];
+    el.innerHTML = renderMarkdown(built) +
+      '<span class="inline-block w-0.5 h-3.5 bg-fpl-green cursor align-middle ml-0.5"></span>';
+    document.getElementById('ai-messages').scrollTop = 999999;
+    // fast at start, settle at ~20ms per word
+    await new Promise(r => setTimeout(r, 18));
+  }
+  el.innerHTML = renderMarkdown(fullText);
+  document.getElementById('ai-messages').scrollTop = 999999;
+}
+
 
 // ── NAVIGATION ───────────────────────────────
 
